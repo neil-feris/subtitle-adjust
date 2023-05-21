@@ -7,7 +7,7 @@ import zipfile
 
 def adjust_line_width(srt_file, max_width):
     try:
-        with open(srt_file, 'r') as file:
+        with open(srt_file, 'r', encoding='utf-8') as file:
             srt_text = file.read()
     except FileNotFoundError:
         print(f'Error: File not found: {srt_file}')
@@ -58,7 +58,7 @@ def adjust_line_width(srt_file, max_width):
     adjusted_srt = '\n\n'.join(subtitle_blocks)
 
     # Save the adjusted SRT to the original file
-    with open(srt_file, 'w') as file:
+    with open(srt_file, 'w', encoding='utf-8') as file:
         file.write(adjusted_srt)
 
     print(f'Success! Adjusted SRT file saved as: {srt_file}')
