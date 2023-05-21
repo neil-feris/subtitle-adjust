@@ -71,6 +71,14 @@ def adjust_line_width(srt_file, max_width):
 def zip_original_files(folder_path):
     backup_zip = os.path.join(folder_path, 'backup.zip')
 
+    # If backup.zip already exists, prompt the user whether to overwrite it or cancel
+    if os.path.exists(backup_zip):
+        print(f'Warning: {backup_zip} already exists.')
+        response = input('Overwrite? (y/n): ')
+        if response.lower() != 'y':
+            print('Original backup zip file not overwritten.')
+            return
+
     # Create a zip file to store the original files
     with zipfile.ZipFile(backup_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for root, _, files in os.walk(folder_path):
@@ -87,16 +95,18 @@ def backup_srt_files(folder_path, recursive=False, create_zip=True):
         zip_original_files(folder_path)
 
     if recursive:
+        # walker only yields files that end with .srt
         walker = os.walk(folder_path)
     else:
-        walker = [(folder_path, [], [file for file in os.listdir(folder_path) if file.endswith('.srt')])]
+        walker = [(folder_path, [], [file for file in os.listdir(folder_path)])]
 
     for root, _, files in walker:
-        for filename in files:
+        for filename in [file for file in files if file.endswith('.srt')]:
             srt_file_path = os.path.join(root, filename)
             max_line_width = 60
 
             print(f'Processing: {srt_file_path}')
+            # input('press enter to continue...')
 
             adjust_line_width(srt_file_path, max_line_width)
 
