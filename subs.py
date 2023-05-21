@@ -58,8 +58,12 @@ def adjust_line_width(srt_file, max_width):
     adjusted_srt = '\n\n'.join(subtitle_blocks)
 
     # Save the adjusted SRT to the original file
-    with open(srt_file, 'w', encoding='utf-8') as file:
-        file.write(adjusted_srt)
+    try:
+        with open(srt_file, 'w', encoding='utf-8') as file:
+            file.write(adjusted_srt)
+    except Exception as e:
+        print(f'Error: {e}')
+        return
 
     print(f'Success! Adjusted SRT file saved as: {srt_file}')
 
