@@ -1,12 +1,21 @@
+import argparse
 import os
 import re
 import shutil
 import zipfile
-import argparse
+
 
 def adjust_line_width(srt_file, max_width):
-    with open(srt_file, 'r') as file:
-        srt_text = file.read()
+    try:
+        with open(srt_file, 'r') as file:
+            srt_text = file.read()
+    except FileNotFoundError:
+        print(f'Error: File not found: {srt_file}')
+        return
+    except Exception as e:
+        print(f'Error: {e}')
+        return
+    
 
     # Split the text into individual subtitle blocks
     subtitle_blocks = re.split(r'\n{2,}', srt_text)
@@ -54,28 +63,39 @@ def adjust_line_width(srt_file, max_width):
 
     print(f'Success! Adjusted SRT file saved as: {srt_file}')
 
+
 def zip_original_files(folder_path):
     backup_zip = os.path.join(folder_path, 'backup.zip')
 
     # Create a zip file to store the original files
     with zipfile.ZipFile(backup_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for filename in os.listdir(folder_path):
-            if filename.endswith('.srt'):
-                srt_file_path = os.path.join(folder_path, filename)
-                zipf.write(srt_file_path, arcname=os.path.basename(srt_file_path))
+        for root, _, files in os.walk(folder_path):
+            for filename in files:
+                if filename.endswith('.srt'):
+                    srt_file_path = os.path.join(root, filename)
+                    zipf.write(srt_file_path, arcname=os.path.relpath(srt_file_path, folder_path))
 
     print(f'Success! Original files zipped: {backup_zip}')
 
-def backup_srt_files(folder_path, create_zip=True):
-    for filename in os.listdir(folder_path):
-        if filename.endswith('.srt'):
-            srt_file_path = os.path.join(folder_path, filename)
+
+def backup_srt_files(folder_path, recursive=False, create_zip=True):
+    if create_zip:
+        zip_original_files(folder_path)
+
+    if recursive:
+        walker = os.walk(folder_path)
+    else:
+        walker = [(folder_path, [], [file for file in os.listdir(folder_path) if file.endswith('.srt')])]
+
+    for root, _, files in walker:
+        for filename in files:
+            srt_file_path = os.path.join(root, filename)
             max_line_width = 60
+
+            print(f'Processing: {srt_file_path}')
 
             adjust_line_width(srt_file_path, max_line_width)
 
-    if create_zip:
-        zip_original_files(folder_path)
 
 def main():
     # Create the argument parser
@@ -84,6 +104,10 @@ def main():
     # Add a positional argument for the folder path
     parser.add_argument('folder_path', type=str, help='Path to the folder containing the SRT files')
 
+    # Add an optional argument to enable recursive processing
+    parser.add_argument('--recursive', dest='recursive', action='store_true',
+                        help='Enable recursive processing of subdirectories')
+
     # Add an optional argument to skip creating the backup zip file
     parser.add_argument('--no-zip', dest='create_zip', action='store_false',
                         help='Do not create a backup zip file')
@@ -91,11 +115,12 @@ def main():
     # Parse the command-line arguments
     args = parser.parse_args()
 
-    # Retrieve the folder path and create_zip value from the parsed arguments
+    # Retrieve the folder path, recursive, and create_zip values from the parsed arguments
     folder_path = args.folder_path
+    recursive = args.recursive
     create_zip = args.create_zip
 
-    backup_srt_files(folder_path, create_zip)
+    backup_srt_files(folder_path, recursive, create_zip)
 
 
 if __name__ == '__main__':
